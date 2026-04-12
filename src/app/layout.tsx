@@ -4,8 +4,8 @@ import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ChummyChummy Admin',
-  description: 'ChummyChummy Admin Dashboard',
+  title: 'Why Not Darius',
+  description: '롤 탑 라인 카운터픽 도우미',
 };
 
 export default function RootLayout({
