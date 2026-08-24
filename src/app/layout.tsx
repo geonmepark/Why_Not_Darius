@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Providers } from '@/components/common/Providers';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
@@ -16,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        {children}
         <Toaster position="top-center" />
       </body>
     </html>

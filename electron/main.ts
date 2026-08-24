@@ -27,10 +27,10 @@ function createWindow(): void {
   });
 
   if (isDev) {
-    mainWindow.loadURL(NEXT_DEV_URL);
+    mainWindow.loadURL(`${NEXT_DEV_URL}/app`);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../out/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../out/app/index.html'));
   }
 
   // 창 닫기 → 트레이로 숨기기 (앱 종료 아님)
