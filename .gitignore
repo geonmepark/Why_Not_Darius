@@ -50,3 +50,7 @@ UI_COMPONENTS.md
 .claude
 .husky
 docs
+
+# electron build output
+/dist-electron/
+/release/
