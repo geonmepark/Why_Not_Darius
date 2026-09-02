@@ -34,11 +34,15 @@
   `__dirname/../package.json` 을 직접 읽는다.
 - [미서명 설치 안내 섹션](issues/03-install-guide.md): `/download` 페이지 전용 3단계 가이드.
   SmartScreen 단계만 강조. FAQ 도 실제 동작에 맞게 갱신.
+- [빌드 차단 해제](issues/01-developer-mode.md): 관리자 터미널로 1회 통과.
+  캐시가 풀린 뒤로는 권한 없이도 빌드된다.
+- [패키징본 검증](issues/02-verify-packaged-app.md): 정적 export 의 절대경로 자산이
+  file:// 에서 전부 404 라 JS 가 하나도 로드되지 않았다. `app://` 스킴으로 해결.
+  프로덕션 CSP 는 문제가 아니었다 — 챔피언 이미지 339/339 로드.
 
 ## Not yet specified
 
-- 프로덕션 CSP. 패키징된 앱이 `file://` 에서 DDragon/CommunityDragon 이미지를
-  불러오는지 확인해야 판단 가능. 차단되면 대응 방식(메타 태그 vs 세션 헤더)을 정한다.
+- 패키징본에서의 LCU 연결. 롤 클라이언트를 켠 상태로 한 번 확인해야 한다.
 - 첫 릴리스 버전 번호와 릴리스 노트 형식. `package.json` 은 0.1.0.
 - 사용자 문의를 어디로 받을지 (GitHub Issues vs 별도 채널). 실제 사용자가
   생긴 뒤에 판단.
