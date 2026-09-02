@@ -1,6 +1,9 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
+// Electron 빌드는 output: 'export' 라 정적 생성이 가능해야 한다.
+// edge 런타임은 정적 생성과 양립하지 않아 쓰지 않는다 (next/og 는 node 에서도 동작).
+export const dynamic = 'force-static';
+
 export const alt = 'Why Not Dari — LoL 카운터픽 자동 추천';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';

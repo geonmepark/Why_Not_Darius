@@ -47,7 +47,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "electron": "^41.2.0",
     "lucide-react": "^0.577.0",
     "next": "16.2.1",
     "next-themes": "^0.4.6",
@@ -74,6 +73,7 @@
     "@types/ws": "^8.18.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
@@ -95,5 +95,7 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "description": "LoL 챔피언 선택 중 상대 픽에 맞춰 미리 정해둔 카운터픽을 띄워주는 데스크톱 앱",
+  "author": "geonmepark"
 }
