@@ -36,4 +36,7 @@ export type ElectronApi = {
   /** 저장 파일을 탐색기/파인더에서 보여준다 */
   revealCountersFile: () => Promise<void>;
   getCountersPath: () => Promise<string>;
+
+  /** 설치된 앱 버전 — 최신 릴리즈와 비교해 업데이트 배너를 띄우는 데 쓴다 */
+  getAppVersion: () => Promise<string>;
 };

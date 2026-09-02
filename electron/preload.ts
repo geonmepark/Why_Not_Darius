@@ -31,4 +31,6 @@ contextBridge.exposeInMainWorld('electronApi', {
   importCounters: (): Promise<CountersIoResult> => ipcRenderer.invoke('counters:import'),
   revealCountersFile: (): Promise<void> => ipcRenderer.invoke('counters:reveal'),
   getCountersPath: (): Promise<string> => ipcRenderer.invoke('counters:path'),
+
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version'),
 } satisfies ElectronApi);

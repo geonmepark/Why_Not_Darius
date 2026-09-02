@@ -13,6 +13,27 @@ import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/typ
  */
 app.setName('why-not-dari');
 
+/**
+ * app.getVersion() 은 dev 에서 Electron 자체 버전(41.x)을 돌려준다 — 앱 이름과 같은 이유로
+ * package.json 이 앱 패키지로 로드되지 않기 때문이다. 업데이트 비교의 기준값이므로
+ * 두 모드에서 같은 값이 나오도록 package.json 에서 직접 읽는다.
+ *
+ * 경로는 이 파일이 out/ 과 public/ 을 찾을 때 쓰는 것과 같은 __dirname 기준이다.
+ * dev 는 dist-electron/../package.json, 패키징 후는 app.asar/package.json 이 된다.
+ * (app.getAppPath() 는 dev 에서 dist-electron 을 가리켜 쓸 수 없다.)
+ */
+function readAppVersion(): string {
+  const file = path.join(__dirname, '../package.json');
+  try {
+    const pkg = JSON.parse(fs.readFileSync(file, 'utf-8')) as { version?: string };
+    if (pkg.version) return pkg.version;
+    console.error(`[app] package.json 에 version 이 없습니다: ${file}`);
+  } catch (err) {
+    console.error(`[app] 버전을 읽지 못했습니다: ${file}`, err);
+  }
+  return app.getVersion();
+}
+
 const isDev = !app.isPackaged;
 const NEXT_DEV_URL = 'http://localhost:8157';
 
@@ -204,6 +225,7 @@ function registerCountersIpc(): void {
 
 app.whenReady().then(() => {
   ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
+  ipcMain.handle('app:get-version', (): string => readAppVersion());
   registerCountersIpc();
 
   app.dock?.setIcon(appIconPath);

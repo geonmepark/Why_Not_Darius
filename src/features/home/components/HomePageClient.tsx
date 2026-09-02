@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useLcuStore } from '@/store/lcu';
 import { LcuStatusBadge } from './LcuStatusBadge';
 import { CounterAlert } from './CounterAlert';
+import { UpdateBanner } from './UpdateBanner';
 
 export function HomePageClient() {
   const status = useLcuStore((s) => s.status);
@@ -15,6 +16,8 @@ export function HomePageClient() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+      <UpdateBanner />
+
       <header className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
           <span className="font-bold text-base text-blue-400">Why Not Dari</span>
