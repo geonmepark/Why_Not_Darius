@@ -148,7 +148,7 @@ export function RpsAnalogy() {
           </p>
           <p className="mt-2 text-balance text-sm text-muted-foreground md:text-base">
             우린 그 답을 미리 적어놓고, 픽창에서 자동으로 띄워줍니다. —{' '}
-            <span className="font-semibold text-primary">Why Not Darius?</span>
+            <span className="font-semibold text-primary">Why Not Dari?</span>
           </p>
         </div>
       </div>

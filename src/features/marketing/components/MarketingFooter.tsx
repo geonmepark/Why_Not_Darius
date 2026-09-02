@@ -8,7 +8,7 @@ export function MarketingFooter() {
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-10 text-sm text-muted-foreground md:flex-row">
         <div className="flex flex-col items-center gap-1 md:items-start">
           <div className="font-semibold text-foreground">
-            Why Not Darius<span className="text-primary">?</span>
+            Why Not Dari<span className="text-primary">?</span>
           </div>
           <div className="text-xs">
             © {new Date().getFullYear()} · 비공식 보조 도구. League of Legends는 Riot Games의

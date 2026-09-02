@@ -20,8 +20,7 @@ export async function Hero() {
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+            backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
             backgroundSize: '24px 24px',
             color: 'var(--foreground)',
           }}
@@ -44,7 +43,7 @@ export async function Hero() {
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-            <strong className="font-semibold text-foreground">Why Not Darius</strong>는 LoL 탑 라인
+            <strong className="font-semibold text-foreground">Why Not Dari</strong>는 LoL 탑 라인
             카운터픽을 픽창에 들어가는 순간 자동으로 띄워주는 데스크톱 도우미입니다. 외울 필요 없이,
             한 번 등록해두면 그때그때 알려줘요.
           </p>

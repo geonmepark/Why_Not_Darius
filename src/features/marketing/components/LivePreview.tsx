@@ -92,9 +92,7 @@ function TitleBar() {
       <span className="size-3 rounded-full bg-[#ff5f57]" />
       <span className="size-3 rounded-full bg-[#febc2e]" />
       <span className="size-3 rounded-full bg-[#28c840]" />
-      <p className="ml-3 text-xs font-medium text-muted-foreground">
-        Why Not Darius
-      </p>
+      <p className="ml-3 text-xs font-medium text-muted-foreground">Why Not Dari</p>
     </div>
   );
 }
@@ -150,13 +148,7 @@ function CounterCard({ opponent, counters }: AlertData) {
   );
 }
 
-function ChampImg({
-  champion,
-  ringClass,
-}: {
-  champion: MockChampion;
-  ringClass?: string;
-}) {
+function ChampImg({ champion, ringClass }: { champion: MockChampion; ringClass?: string }) {
   const [errored, setErrored] = useState(false);
   if (errored) {
     return <Skeleton className={cn('size-14 rounded-md', ringClass)} />;

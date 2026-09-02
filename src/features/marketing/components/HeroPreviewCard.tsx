@@ -13,7 +13,7 @@ interface MockChampion {
 }
 
 const opponent: MockChampion = { id: 114, name: '피오라' };
-// 1순위가 다리우스인 건 앱 이름 콜백 (Why Not Darius?)
+// 1순위가 다리우스인 건 앱 이름 콜백 (Why Not Dari?)
 const counters: MockChampion[] = [
   { id: 122, name: '다리우스' },
   { id: 54, name: '말파이트' },

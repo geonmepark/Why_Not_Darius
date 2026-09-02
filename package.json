@@ -1,5 +1,5 @@
 {
-  "name": "why-not-darius",
+  "name": "why-not-dari",
   "version": "0.1.0",
   "private": true,
   "main": "dist-electron/main.js",
@@ -17,7 +17,7 @@
     "gen-icon": "node scripts/gen-icon.mjs"
   },
   "build": {
-    "appId": "com.whynotdarius.app",
+    "appId": "com.whynotdari.app",
     "productName": "Why Not Dari",
     "files": [
       "dist-electron/**/*",

@@ -18,17 +18,13 @@ export function MarketingNav() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <Link href="/" className="group flex items-center gap-2">
           <span className="text-base font-extrabold tracking-tight">
-            Why Not Darius<span className="text-primary">?</span>
+            Why Not Dari<span className="text-primary">?</span>
           </span>
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="transition-colors hover:text-foreground"
-            >
+            <a key={link.href} href={link.href} className="transition-colors hover:text-foreground">
               {link.label}
             </a>
           ))}

@@ -3,7 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Why Not Darius',
+  title: 'Why Not Dari',
   description: '롤 탑 라인 카운터픽 도우미',
 };
 
