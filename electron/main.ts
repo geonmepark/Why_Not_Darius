@@ -1,6 +1,18 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, dialog } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  nativeImage,
+  shell,
+  ipcMain,
+  dialog,
+  protocol,
+  net,
+} from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { LcuWatcher } from './lcu/watcher';
 import { getCountersPath, isCountersFile, readCounters, writeCounters } from './storage/counters';
 import type { CountersFile, CountersIoResult } from './api-types';
@@ -37,6 +49,38 @@ function readAppVersion(): string {
 const isDev = !app.isPackaged;
 const NEXT_DEV_URL = 'http://localhost:8157';
 
+/**
+ * 정적 export 된 페이지는 자산을 절대경로(/_next/...)로 참조한다. file:// 에서는
+ * 그 슬래시가 드라이브 루트로 해석돼 전부 404 가 되고, 결국 JS 가 하나도 로드되지
+ * 않아 앱이 껍데기만 뜬다. out/ 을 루트로 삼는 스킴을 등록해 해결한다.
+ */
+const APP_SCHEME = 'app';
+const APP_ORIGIN = `${APP_SCHEME}://bundle`;
+const OUT_DIR = path.join(__dirname, '../out');
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: APP_SCHEME,
+    privileges: { standard: true, secure: true, supportFetchAPI: true },
+  },
+]);
+
+function registerAppProtocol(): void {
+  protocol.handle(APP_SCHEME, (request) => {
+    const { pathname } = new URL(request.url);
+    let filePath = path.join(OUT_DIR, decodeURIComponent(pathname));
+
+    // trailingSlash 로 내보낸 라우트는 디렉토리 + index.html 형태다
+    if (!path.extname(filePath)) filePath = path.join(filePath, 'index.html');
+
+    // out/ 밖을 가리키는 경로는 거부한다
+    if (!filePath.startsWith(OUT_DIR)) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+}
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let watcher: LcuWatcher | null = null;
@@ -67,7 +111,7 @@ function createWindow(): void {
     mainWindow.loadURL(`${NEXT_DEV_URL}/app`);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../out/app/index.html'));
+    mainWindow.loadURL(`${APP_ORIGIN}/app/index.html`);
   }
 
   // 창 닫기 → 트레이로 숨기기 (앱 종료 아님)
@@ -224,6 +268,8 @@ function registerCountersIpc(): void {
 }
 
 app.whenReady().then(() => {
+  if (!isDev) registerAppProtocol();
+
   ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
   ipcMain.handle('app:get-version', (): string => readAppVersion());
   registerCountersIpc();
