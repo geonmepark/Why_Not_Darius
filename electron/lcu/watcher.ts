@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import WebSocket from 'ws';
+import { resolveLeagueInstallDir, resolveLeagueLockfilePath } from './resolve-lockfile';
 import type { LcuCredentials, LcuChampSelectSession } from './types';
 
 type WatcherEvent =
@@ -12,40 +13,54 @@ type WatcherEvent =
 const CHAMP_SELECT_EVENT = 'OnJsonApiEvent_lol-champ-select_v1_session';
 
 export class LcuWatcher {
-  private readonly lockfilePath: string;
+  /** 생성자로 넘어온 고정 경로 — 테스트/수동 지정용. 없으면 매번 자동 탐색한다. */
+  private readonly lockfileOverride: string | null;
   private fsWatcher: fs.FSWatcher | null = null;
   private pollTimer: NodeJS.Timeout | null = null;
   private ws: WebSocket | null = null;
   private stopped = false;
 
-  constructor(private readonly emit: (event: WatcherEvent) => void, lockfilePath?: string) {
-    this.lockfilePath =
-      lockfilePath ??
-      path.join(
-        process.env.LOCALAPPDATA ?? path.join(process.env.HOME ?? '', 'AppData', 'Local'),
-        'Riot Games',
-        'Riot Client',
-        'Config',
-        'lockfile',
-      );
+  constructor(
+    private readonly emit: (event: WatcherEvent) => void,
+    lockfilePath?: string,
+  ) {
+    this.lockfileOverride = lockfilePath ?? null;
+  }
+
+  /** 롤이 실행 중일 때만 락파일이 존재한다 — 매 확인마다 새로 찾는다(설치 경로 변경 대응) */
+  private currentLockfilePath(): string | null {
+    if (this.lockfileOverride) {
+      return fs.existsSync(this.lockfileOverride) ? this.lockfileOverride : null;
+    }
+    return resolveLeagueLockfilePath();
   }
 
   start(): void {
     this.stopped = false;
     this.checkAndConnect();
+    this.watchInstallDir();
 
-    // 디렉토리 감시 — rename 이벤트로 락파일 생성/삭제 감지
-    const dir = path.dirname(this.lockfilePath);
+    // 10초 폴백 폴링 — fs.watch 누락 방어 + 설치 디렉토리 재탐색
+    this.pollTimer = setInterval(() => {
+      this.checkAndConnect();
+      if (!this.fsWatcher) this.watchInstallDir();
+    }, 10_000);
+  }
+
+  /** 락파일이 생성/삭제되는 롤 설치 디렉토리를 감시 */
+  private watchInstallDir(): void {
+    const dir = this.lockfileOverride
+      ? path.dirname(this.lockfileOverride)
+      : resolveLeagueInstallDir();
+    if (!dir) return; // 롤 미설치 — 폴링만 사용
+
     try {
       this.fsWatcher = fs.watch(dir, (event) => {
         if (event === 'rename') this.checkAndConnect();
       });
     } catch {
-      // 디렉토리가 없으면(롤 미설치) 폴링만 사용
+      this.fsWatcher = null;
     }
-
-    // 10초 폴백 폴링 — fs.watch 누락 방어
-    this.pollTimer = setInterval(() => this.checkAndConnect(), 10_000);
   }
 
   stop(): void {
@@ -60,11 +75,18 @@ export class LcuWatcher {
   private checkAndConnect(): void {
     if (this.stopped) return;
 
-    if (fs.existsSync(this.lockfilePath)) {
-      // 이미 연결 중이면 재연결 불필요
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
+    const lockfilePath = this.currentLockfilePath();
+
+    if (lockfilePath) {
+      // 이미 연결됐거나 연결 시도 중이면 재연결 불필요
+      if (
+        this.ws &&
+        (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+      ) {
+        return;
+      }
       try {
-        const content = fs.readFileSync(this.lockfilePath, 'utf-8');
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
         const credentials = this.parseLockfile(content);
         this.connectWs(credentials);
       } catch (err) {
