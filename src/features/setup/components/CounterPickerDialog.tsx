@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -63,18 +64,19 @@ export function CounterPickerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-100 max-w-lg">
+        {/* Radix 는 DialogContent 에 Title/Description 이 항상 있어야 aria 연결을 걸 수 있다 */}
         <DialogHeader>
-          {opponent && (
-            <div className="flex items-center gap-3 mb-1">
-              <ChampionAvatar champion={opponent} size="lg" className="rounded-md" />
-              <div>
-                <DialogTitle className="text-lg font-bold text-zinc-100">
-                  {opponent.name}
-                </DialogTitle>
-                <p className="text-sm text-zinc-400">의 카운터 픽 설정</p>
-              </div>
+          <div className="flex items-center gap-3 mb-1">
+            {opponent && <ChampionAvatar champion={opponent} size="lg" className="rounded-md" />}
+            <div>
+              <DialogTitle className="text-lg font-bold text-zinc-100">
+                {opponent?.name ?? '카운터 픽 설정'}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-zinc-400">
+                {opponent ? '의 카운터 픽 설정' : `카운터픽을 최대 ${MAX_COUNTERS}개 고르세요.`}
+              </DialogDescription>
             </div>
-          )}
+          </div>
         </DialogHeader>
 
         {/* 선택된 카운터 슬롯 */}

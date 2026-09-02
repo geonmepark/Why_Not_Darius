@@ -12,28 +12,36 @@ export function CounterAlert() {
   const counters = useCounterStore((s) => s.counters);
   const { data: champions } = useChampions();
 
-  // key(숫자 문자열) → Champion 조회 맵
+  // LCU 는 숫자 championId("266")를 주고, CounterMap 은 DDragon id("Aatrox")로 저장된다.
+  // 두 형식을 여기서 이어준다.
   const championByKey = useMemo<Record<string, Champion>>(() => {
     if (!champions) return {};
     return Object.fromEntries(champions.map((c) => [c.key, c]));
   }, [champions]);
 
-  // LCU championId(숫자) → String → CounterMap 키 매칭
+  const championById = useMemo<Record<string, Champion>>(() => {
+    if (!champions) return {};
+    return Object.fromEntries(champions.map((c) => [c.id, c]));
+  }, [champions]);
+
   const alerts = useMemo(() => {
-    return confirmedOpponentIds.flatMap((opponentKey) => {
-      const opponent = championByKey[opponentKey];
-      const counterKeys = counters[opponentKey] ?? [];
-      if (!opponent || counterKeys.length === 0) return [];
-      const counterChampions = counterKeys.map((k) => championByKey[k]).filter(Boolean) as Champion[];
+    return confirmedOpponentIds.flatMap((championId) => {
+      const opponent = championByKey[championId]; // "266" → Champion
+      if (!opponent) return [];
+
+      const counterIds = counters[opponent.id] ?? []; // "Aatrox" → ["Darius", ...]
+      if (counterIds.length === 0) return [];
+
+      const counterChampions = counterIds
+        .map((id) => championById[id])
+        .filter(Boolean) as Champion[];
       return [{ opponent, counterChampions }];
     });
-  }, [confirmedOpponentIds, counters, championByKey]);
+  }, [confirmedOpponentIds, counters, championByKey, championById]);
 
   if (alerts.length === 0) {
     return (
-      <div className="text-center text-zinc-500 py-8 text-sm">
-        상대 챔피언 픽을 기다리는 중...
-      </div>
+      <div className="text-center text-zinc-500 py-8 text-sm">상대 챔피언 픽을 기다리는 중...</div>
     );
   }
 
@@ -42,7 +50,11 @@ export function CounterAlert() {
       {alerts.map(({ opponent, counterChampions }) => (
         <div key={opponent.key} className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
           <div className="flex items-center gap-3 mb-4">
-            <ChampionAvatar champion={opponent} size="lg" className="rounded-md ring-2 ring-red-500" />
+            <ChampionAvatar
+              champion={opponent}
+              size="lg"
+              className="rounded-md ring-2 ring-red-500"
+            />
             <div>
               <p className="text-xs text-zinc-400 mb-0.5">상대 픽</p>
               <p className="font-bold text-zinc-100 text-lg">{opponent.name}</p>

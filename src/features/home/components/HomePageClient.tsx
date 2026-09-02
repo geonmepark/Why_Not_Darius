@@ -17,11 +17,11 @@ export function HomePageClient() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
       <header className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-base text-blue-400">Why Not Darius</span>
+          <span className="font-bold text-base text-blue-400">Why Not Dari</span>
           <LcuStatusBadge />
         </div>
         <Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:text-zinc-100">
-          <Link href="/setup">
+          <Link href="/app/setup">
             <Settings className="w-5 h-5" />
           </Link>
         </Button>
