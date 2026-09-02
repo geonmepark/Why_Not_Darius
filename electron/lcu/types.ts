@@ -29,7 +29,10 @@ export interface LcuChampSelectEvent {
   phase: string;
 }
 
-export type ElectronApi = {
-  onLcuStatus: (cb: (event: LcuStatusEvent) => void) => () => void;
-  onLcuChampSelect: (cb: (event: LcuChampSelectEvent) => void) => () => void;
-};
+/** 렌더러가 마운트 시점에 현재 상태를 끌어오기 위한 스냅샷 */
+export interface LcuSnapshot {
+  status: LcuStatus;
+  champSelect: LcuChampSelectEvent | null;
+}
+
+// ElectronApi 는 LCU 외 채널도 담게 되어 electron/api-types.ts 로 옮겼다.

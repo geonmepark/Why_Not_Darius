@@ -54,3 +54,7 @@ docs
 # electron build output
 /dist-electron/
 /release/
+
+# 개인 카운터픽 백업 (커밋하지 않음)
+my-counters.backup.json
+my-counters.backup.md

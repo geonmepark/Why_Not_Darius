@@ -1,7 +1,17 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, dialog } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { LcuWatcher } from './lcu/watcher';
-import type { LcuChampSelectEvent, LcuStatusEvent } from './lcu/types';
+import { getCountersPath, isCountersFile, readCounters, writeCounters } from './storage/counters';
+import type { CountersFile, CountersIoResult } from './api-types';
+import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/types';
+
+/**
+ * 앱 이름을 명시하지 않으면 dev 는 Electron 기본값을, 설치본은 빌드 설정값을 쓴다.
+ * 두 경로가 갈리면 저장 데이터가 따라오지 못하므로 여기서 못 박는다.
+ * userData 경로에 들어가는 값이라 공백 없는 형태를 쓴다 (표시 이름은 Why Not Dari).
+ */
+app.setName('why-not-dari');
 
 const isDev = !app.isPackaged;
 const NEXT_DEV_URL = 'http://localhost:8157';
@@ -9,6 +19,12 @@ const NEXT_DEV_URL = 'http://localhost:8157';
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let watcher: LcuWatcher | null = null;
+
+/**
+ * 워처는 창이 뜬 직후 연결되지만, 렌더러(Next 페이지)는 몇 초 뒤에야 리스너를 등록한다.
+ * 그 사이 푸시된 이벤트는 유실되므로 마지막 상태를 들고 있다가 렌더러가 요청할 때 돌려준다.
+ */
+const snapshot: LcuSnapshot = { status: 'disconnected', champSelect: null };
 
 const appIconPath = path.join(__dirname, '../public/icons/app-icon.png');
 
@@ -47,7 +63,9 @@ function createWindow(): void {
 
 function createTray(): void {
   const icon = nativeImage.createFromPath(appIconPath);
-  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 }));
+  tray = new Tray(
+    icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 }),
+  );
 
   tray.setToolTip('Why Not Dari');
 
@@ -82,27 +100,31 @@ function createTray(): void {
 
 function startWatcher(): void {
   watcher = new LcuWatcher((event) => {
-    if (!mainWindow) return;
-
     switch (event.type) {
-      case 'connected':
-        mainWindow.webContents.send('lcu:status', {
-          status: 'connected',
-        } satisfies LcuStatusEvent);
+      case 'connected': {
+        snapshot.status = 'connected';
+        const payload: LcuStatusEvent = { status: 'connected' };
+        mainWindow?.webContents.send('lcu:status', payload);
         break;
+      }
 
-      case 'disconnected':
-        mainWindow.webContents.send('lcu:status', {
-          status: 'disconnected',
-        } satisfies LcuStatusEvent);
+      case 'disconnected': {
+        snapshot.status = 'disconnected';
+        snapshot.champSelect = null;
+        const payload: LcuStatusEvent = { status: 'disconnected' };
+        mainWindow?.webContents.send('lcu:status', payload);
         break;
+      }
 
-      case 'champ-select':
-        mainWindow.webContents.send('lcu:champ-select', {
+      case 'champ-select': {
+        const payload: LcuChampSelectEvent = {
           theirTeam: event.session.theirTeam,
           phase: event.session.timer?.phase ?? '',
-        } satisfies LcuChampSelectEvent);
+        };
+        snapshot.champSelect = payload;
+        mainWindow?.webContents.send('lcu:champ-select', payload);
         break;
+      }
 
       case 'error':
         console.error('[LcuWatcher]', event.message);
@@ -113,7 +135,77 @@ function startWatcher(): void {
   watcher.start();
 }
 
+function exportFileName(): string {
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  return `why-not-dari-counters-${today}.json`;
+}
+
+function registerCountersIpc(): void {
+  ipcMain.handle('counters:read', (): CountersFile => readCounters());
+
+  ipcMain.handle('counters:path', (): string => getCountersPath());
+
+  ipcMain.handle('counters:write', (_e, data: unknown): { ok: boolean; message?: string } => {
+    if (!isCountersFile(data))
+      return { ok: false, message: '저장하려는 데이터 형식이 올바르지 않습니다.' };
+    try {
+      writeCounters(data);
+      return { ok: true };
+    } catch (err) {
+      console.error('[counters] 저장 실패', err);
+      return { ok: false, message: String(err) };
+    }
+  });
+
+  ipcMain.handle('counters:reveal', (): void => {
+    shell.showItemInFolder(getCountersPath());
+  });
+
+  ipcMain.handle('counters:export', async (_e, data: unknown): Promise<CountersIoResult> => {
+    if (!isCountersFile(data))
+      return { status: 'error', message: '내보낼 데이터 형식이 올바르지 않습니다.' };
+
+    const result = await dialog.showSaveDialog({
+      title: '카운터픽 내보내기',
+      defaultPath: exportFileName(),
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (result.canceled || !result.filePath) return { status: 'canceled' };
+
+    try {
+      fs.writeFileSync(result.filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
+      return { status: 'ok', filePath: result.filePath, data };
+    } catch (err) {
+      return { status: 'error', message: String(err) };
+    }
+  });
+
+  // 파일을 읽어 돌려주기만 한다 — 적용 여부(덮어쓰기/병합)는 렌더러가 결정한다
+  ipcMain.handle('counters:import', async (): Promise<CountersIoResult> => {
+    const result = await dialog.showOpenDialog({
+      title: '카운터픽 가져오기',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    const filePath = result.filePaths[0];
+    if (result.canceled || !filePath) return { status: 'canceled' };
+
+    try {
+      const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (!isCountersFile(parsed)) {
+        return { status: 'error', message: '카운터픽 파일 형식이 아닙니다.' };
+      }
+      return { status: 'ok', filePath, data: parsed };
+    } catch (err) {
+      return { status: 'error', message: `파일을 읽지 못했습니다: ${String(err)}` };
+    }
+  });
+}
+
 app.whenReady().then(() => {
+  ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
+  registerCountersIpc();
+
   app.dock?.setIcon(appIconPath);
   createWindow();
   createTray();

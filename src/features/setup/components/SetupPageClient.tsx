@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useChampions, useChampionMap } from '@/hooks/useChampions';
 import { useCounterStore } from '@/store/counter';
 import { type Position } from '@/types/champion';
 import { FilterBar } from './FilterBar';
 import { ChampionGrid } from './ChampionGrid';
 import { CounterPickerDialog } from './CounterPickerDialog';
+import { CounterIoButtons } from './CounterIoButtons';
 
 export function SetupPageClient() {
   const { data: champions, isLoading, isError } = useChampions();
@@ -41,8 +45,7 @@ export function SetupPageClient() {
   const filteredChampions = useMemo(() => {
     if (!champions) return [];
     return champions.filter((c) => {
-      const matchesPosition =
-        selectedPosition === 'ALL' || c.positions.includes(selectedPosition);
+      const matchesPosition = selectedPosition === 'ALL' || c.positions.includes(selectedPosition);
       const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTags =
         selectedTags.length === 0 || selectedTags.every((t) => c.tags.includes(t));
@@ -68,11 +71,25 @@ export function SetupPageClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100 mb-1">카운터 픽 설정</h1>
-        <p className="text-sm text-zinc-400">
-          챔피언을 클릭해서 해당 챔피언을 상대할 때 선호하는 카운터픽을 설정하세요. (최대 3개)
-        </p>
+      <div className="flex items-start gap-3">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          aria-label="뒤로 가기"
+          className="mt-0.5 shrink-0 text-zinc-400 hover:text-zinc-100"
+        >
+          <Link href="/app">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-zinc-100 mb-1">카운터 픽 설정</h1>
+          <p className="text-sm text-zinc-400">
+            챔피언을 클릭해서 해당 챔피언을 상대할 때 선호하는 카운터픽을 설정하세요. (최대 3개)
+          </p>
+        </div>
+        <CounterIoButtons />
       </div>
 
       <FilterBar
