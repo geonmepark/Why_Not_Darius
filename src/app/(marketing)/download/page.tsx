@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Download } from '@/features/marketing/components/Download';
+import { InstallGuide } from '@/features/marketing/components/InstallGuide';
 import { SITE_NAME } from '@/lib/marketing/site';
 
 export const metadata: Metadata = {
@@ -11,6 +12,7 @@ export default function DownloadPage() {
   return (
     <div className="border-t border-border/40">
       <Download />
+      <InstallGuide />
     </div>
   );
 }

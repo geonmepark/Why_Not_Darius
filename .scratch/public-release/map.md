@@ -27,6 +27,13 @@
   전제라 첫 릴리스 전에는 불가능하다. 설치 가이드로 보완한다.
 - 업데이트는 앱 내 "새 버전 있음" 배너. electron-updater 는 미서명 상태에서
   설치 경고를 다시 만나 경험이 더 나빠진다.
+- [푸터 법적 고지](issues/05-legal-notice.md): Riot 미승인 고지 + 데이터 수집 없음.
+  수집 데이터가 없어 개인정보 처리방침 페이지는 만들지 않는다.
+- [앱 내 새 버전 알림 배너](issues/04-update-banner.md): `app:get-version` IPC 추가.
+  `app.getVersion()`·`app.getAppPath()` 는 dev 에서 엉뚱한 값을 줘서 쓸 수 없었고,
+  `__dirname/../package.json` 을 직접 읽는다.
+- [미서명 설치 안내 섹션](issues/03-install-guide.md): `/download` 페이지 전용 3단계 가이드.
+  SmartScreen 단계만 강조. FAQ 도 실제 동작에 맞게 갱신.
 
 ## Not yet specified
 
@@ -35,7 +42,10 @@
 - 첫 릴리스 버전 번호와 릴리스 노트 형식. `package.json` 은 0.1.0.
 - 사용자 문의를 어디로 받을지 (GitHub Issues vs 별도 채널). 실제 사용자가
   생긴 뒤에 판단.
-- SmartScreen 안내 스크린샷. 실제 릴리스된 exe 로 캡처해야 정확하다.
+- SmartScreen 안내 스크린샷. 실제 릴리스된 exe 로 캡처해야 문구가 정확하다.
+  `InstallGuide.tsx` 의 각 단계에 넣을 자리는 이미 있다.
+- 업데이트 배너의 실제 렌더 확인. 릴리즈가 없어 훅이 항상 null 이라, 설치 버전보다
+  높은 릴리즈가 생긴 뒤에야 볼 수 있다.
 
 ## Out of scope
 

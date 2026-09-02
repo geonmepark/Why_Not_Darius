@@ -67,11 +67,11 @@ export async function Download() {
         </div>
 
         <p className="mt-10 text-center text-xs text-muted-foreground/70">
-          첫 실행 시 OS 보안 경고가 뜰 수 있어요 —{' '}
-          <a href="#faq" className="underline-offset-2 hover:underline">
-            FAQ
+          설치할 때 보안 경고가 뜹니다 —{' '}
+          <a href="#install-guide" className="underline-offset-2 hover:underline">
+            넘어가는 방법
           </a>
-          를 참고하세요.
+          을 먼저 읽어보세요.
         </p>
       </div>
     </section>
