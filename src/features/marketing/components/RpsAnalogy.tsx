@@ -14,9 +14,10 @@ interface Round {
   caption: string;
 }
 
+// 손 모양으로 통일한다. 가위만 손이고 바위는 돌멩이, 보는 문서였다.
 const HAND_EMOJI: Record<Hand, string> = {
-  rock: '🪨',
-  paper: '📄',
+  rock: '✊',
+  paper: '🖐️',
   scissors: '✌️',
 };
 
