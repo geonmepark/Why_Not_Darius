@@ -1,0 +1,12 @@
+# Electron 빌드 산출물 — 웹 배포에 불필요하고 설치 파일이 100MB 제한을 넘긴다
+release/
+dist-electron/
+out/
+
+# 개인 백업
+my-counters.backup.json
+my-counters.backup.md
+
+# 로컬 작업 기록
+.scratch/
+.omc/
