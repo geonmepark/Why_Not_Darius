@@ -2,7 +2,7 @@
  * 사이트 메타. Vercel 배포 시 NEXT_PUBLIC_SITE_URL 로 본 도메인을 주입.
  */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://why-not-darius.vercel.app';
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://why-not-dari.vercel.app';
 
 export const SITE_NAME = 'Why Not Dari';
 
