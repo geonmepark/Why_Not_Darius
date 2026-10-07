@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type {
+  AutoUpdateStatus,
   CountersFile,
   CountersIoResult,
   ElectronApi,
@@ -33,4 +34,10 @@ contextBridge.exposeInMainWorld('electronApi', {
   getCountersPath: (): Promise<string> => ipcRenderer.invoke('counters:path'),
 
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version'),
+  getAutoUpdateStatus: (): Promise<AutoUpdateStatus> => ipcRenderer.invoke('app:get-update-status'),
+  onAutoUpdateStatus: (cb: (status: AutoUpdateStatus) => void) => {
+    const listener = (_: Electron.IpcRendererEvent, status: AutoUpdateStatus) => cb(status);
+    ipcRenderer.on('app:update-status', listener);
+    return () => ipcRenderer.removeListener('app:update-status', listener);
+  },
 } satisfies ElectronApi);

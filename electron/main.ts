@@ -13,9 +13,10 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { autoUpdater } from 'electron-updater';
 import { LcuWatcher } from './lcu/watcher';
 import { getCountersPath, isCountersFile, readCounters, writeCounters } from './storage/counters';
-import type { CountersFile, CountersIoResult } from './api-types';
+import type { AutoUpdateStatus, CountersFile, CountersIoResult } from './api-types';
 import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/types';
 
 /**
@@ -219,6 +220,42 @@ function startWatcher(): void {
   watcher.start();
 }
 
+/** 트레이에 며칠씩 상주할 수 있어 시작 시 한 번으로는 부족하다 — 요청 1건이라 부담은 없다 */
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+let updateStatus: AutoUpdateStatus = {
+  state: process.platform === 'win32' && app.isPackaged ? 'pending' : 'unsupported',
+};
+
+function setUpdateStatus(status: AutoUpdateStatus): void {
+  updateStatus = status;
+  mainWindow?.webContents.send('app:update-status', status);
+}
+
+/**
+ * GitHub Release 의 latest.yml 을 보고 새 버전을 백그라운드로 받아둔다.
+ * 설치는 앱이 종료될 때(autoInstallOnAppQuit) — 게임 중에 앱이 재시작되는 일은 없다.
+ */
+function startAutoUpdate(): void {
+  if (updateStatus.state === 'unsupported') return;
+
+  autoUpdater.on('update-downloaded', (info) => {
+    setUpdateStatus({ state: 'downloaded', version: info.version });
+  });
+  autoUpdater.on('error', (err) => {
+    console.error('[updater]', err);
+    // 이미 받아둔 업데이트는 그대로 종료 시 설치되므로 안내를 바꾸지 않는다
+    if (updateStatus.state !== 'downloaded') setUpdateStatus({ state: 'error' });
+  });
+
+  const check = () => {
+    if (updateStatus.state === 'downloaded') return;
+    autoUpdater.checkForUpdates().catch((err) => console.error('[updater]', err));
+  };
+  check();
+  setInterval(check, UPDATE_CHECK_INTERVAL_MS);
+}
+
 function exportFileName(): string {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   return `why-not-dari-counters-${today}.json`;
@@ -295,12 +332,14 @@ if (hasInstanceLock) {
 
     ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
     ipcMain.handle('app:get-version', (): string => readAppVersion());
+    ipcMain.handle('app:get-update-status', (): AutoUpdateStatus => updateStatus);
     registerCountersIpc();
 
     app.dock?.setIcon(appIconPath);
     createWindow();
     createTray();
     startWatcher();
+    startAutoUpdate();
   });
 }
 
