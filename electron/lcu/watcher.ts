@@ -8,6 +8,7 @@ type WatcherEvent =
   | { type: 'connected'; credentials: LcuCredentials }
   | { type: 'disconnected' }
   | { type: 'champ-select'; session: LcuChampSelectSession }
+  | { type: 'champ-select-end' }
   | { type: 'error'; message: string };
 
 const CHAMP_SELECT_EVENT = 'OnJsonApiEvent_lol-champ-select_v1_session';
@@ -130,8 +131,14 @@ export class LcuWatcher {
       try {
         const msg = JSON.parse(raw.toString()) as unknown[];
         if (msg[0] === 8 && msg[1] === CHAMP_SELECT_EVENT) {
-          const payload = msg[2] as { data: LcuChampSelectSession };
-          this.emit({ type: 'champ-select', session: payload.data });
+          const payload = msg[2] as { data: LcuChampSelectSession | null; eventType?: string };
+          // 픽이 끝나면 Delete 와 함께 data 가 비어 온다. 그대로 넘기면 받는 쪽에서 throw 가
+          // 나고 아래 catch 에 묻혀, 게임 중에도 마지막 픽 화면이 남는다.
+          if (payload.eventType === 'Delete' || !payload.data) {
+            this.emit({ type: 'champ-select-end' });
+          } else {
+            this.emit({ type: 'champ-select', session: payload.data });
+          }
         }
       } catch {
         // 파싱 실패 무시

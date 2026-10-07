@@ -26,6 +26,14 @@ import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/typ
 app.setName('why-not-dari');
 
 /**
+ * 락이 없으면 다시 실행할 때마다 창·트레이·LCU 워처가 하나씩 더 생긴다.
+ * 락은 userData 경로 기준이라 위의 setName 뒤에 잡아야 한다.
+ * 두 번째 실행은 바로 종료하고, 먼저 떠 있던 인스턴스가 second-instance 를 받아 창을 띄운다.
+ */
+const hasInstanceLock = app.requestSingleInstanceLock();
+if (!hasInstanceLock) app.quit();
+
+/**
  * app.getVersion() 은 dev 에서 Electron 자체 버전(41.x)을 돌려준다 — 앱 이름과 같은 이유로
  * package.json 이 앱 패키지로 로드되지 않기 때문이다. 업데이트 비교의 기준값이므로
  * 두 모드에서 같은 값이 나오도록 package.json 에서 직접 읽는다.
@@ -93,6 +101,13 @@ const snapshot: LcuSnapshot = { status: 'disconnected', champSelect: null };
 
 const appIconPath = path.join(__dirname, '../public/icons/app-icon.png');
 
+function showMainWindow(): void {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 480,
@@ -137,10 +152,7 @@ function createTray(): void {
   const menu = Menu.buildFromTemplate([
     {
       label: '열기',
-      click: () => {
-        mainWindow?.show();
-        mainWindow?.focus();
-      },
+      click: showMainWindow,
     },
     { type: 'separator' },
     {
@@ -157,8 +169,7 @@ function createTray(): void {
     if (mainWindow?.isVisible()) {
       mainWindow.hide();
     } else {
-      mainWindow?.show();
-      mainWindow?.focus();
+      showMainWindow();
     }
   });
 }
@@ -187,6 +198,14 @@ function startWatcher(): void {
           phase: event.session.timer?.phase ?? '',
         };
         snapshot.champSelect = payload;
+        mainWindow?.webContents.send('lcu:champ-select', payload);
+        break;
+      }
+
+      case 'champ-select-end': {
+        // 빈 팀을 보내 렌더러가 픽 화면을 내리게 한다 (새 IPC 채널 없이 기존 경로 재사용)
+        snapshot.champSelect = null;
+        const payload: LcuChampSelectEvent = { theirTeam: [], phase: '' };
         mainWindow?.webContents.send('lcu:champ-select', payload);
         break;
       }
@@ -267,18 +286,23 @@ function registerCountersIpc(): void {
   });
 }
 
-app.whenReady().then(() => {
-  if (!isDev) registerAppProtocol();
+// 락을 못 잡은 인스턴스는 종료 중이다 — 창·트레이·워처를 만들지 않는다
+if (hasInstanceLock) {
+  app.on('second-instance', showMainWindow);
 
-  ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
-  ipcMain.handle('app:get-version', (): string => readAppVersion());
-  registerCountersIpc();
+  app.whenReady().then(() => {
+    if (!isDev) registerAppProtocol();
 
-  app.dock?.setIcon(appIconPath);
-  createWindow();
-  createTray();
-  startWatcher();
-});
+    ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
+    ipcMain.handle('app:get-version', (): string => readAppVersion());
+    registerCountersIpc();
+
+    app.dock?.setIcon(appIconPath);
+    createWindow();
+    createTray();
+    startWatcher();
+  });
+}
 
 // 창이 모두 닫혀도 트레이로 상주 — 종료하지 않음
 app.on('window-all-closed', () => {
@@ -289,6 +313,4 @@ app.on('before-quit', () => {
   watcher?.stop();
 });
 
-app.on('activate', () => {
-  mainWindow?.show();
-});
+app.on('activate', showMainWindow);
