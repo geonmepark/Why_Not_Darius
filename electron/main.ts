@@ -13,9 +13,10 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { autoUpdater } from 'electron-updater';
 import { LcuWatcher } from './lcu/watcher';
 import { getCountersPath, isCountersFile, readCounters, writeCounters } from './storage/counters';
-import type { CountersFile, CountersIoResult } from './api-types';
+import type { AutoUpdateStatus, CountersFile, CountersIoResult } from './api-types';
 import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/types';
 
 /**
@@ -24,6 +25,14 @@ import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/typ
  * userData 경로에 들어가는 값이라 공백 없는 형태를 쓴다 (표시 이름은 Why Not Dari).
  */
 app.setName('why-not-dari');
+
+/**
+ * 락이 없으면 다시 실행할 때마다 창·트레이·LCU 워처가 하나씩 더 생긴다.
+ * 락은 userData 경로 기준이라 위의 setName 뒤에 잡아야 한다.
+ * 두 번째 실행은 바로 종료하고, 먼저 떠 있던 인스턴스가 second-instance 를 받아 창을 띄운다.
+ */
+const hasInstanceLock = app.requestSingleInstanceLock();
+if (!hasInstanceLock) app.quit();
 
 /**
  * app.getVersion() 은 dev 에서 Electron 자체 버전(41.x)을 돌려준다 — 앱 이름과 같은 이유로
@@ -93,6 +102,13 @@ const snapshot: LcuSnapshot = { status: 'disconnected', champSelect: null };
 
 const appIconPath = path.join(__dirname, '../public/icons/app-icon.png');
 
+function showMainWindow(): void {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 480,
@@ -137,10 +153,7 @@ function createTray(): void {
   const menu = Menu.buildFromTemplate([
     {
       label: '열기',
-      click: () => {
-        mainWindow?.show();
-        mainWindow?.focus();
-      },
+      click: showMainWindow,
     },
     { type: 'separator' },
     {
@@ -157,8 +170,7 @@ function createTray(): void {
     if (mainWindow?.isVisible()) {
       mainWindow.hide();
     } else {
-      mainWindow?.show();
-      mainWindow?.focus();
+      showMainWindow();
     }
   });
 }
@@ -191,6 +203,14 @@ function startWatcher(): void {
         break;
       }
 
+      case 'champ-select-end': {
+        // 빈 팀을 보내 렌더러가 픽 화면을 내리게 한다 (새 IPC 채널 없이 기존 경로 재사용)
+        snapshot.champSelect = null;
+        const payload: LcuChampSelectEvent = { theirTeam: [], phase: '' };
+        mainWindow?.webContents.send('lcu:champ-select', payload);
+        break;
+      }
+
       case 'error':
         console.error('[LcuWatcher]', event.message);
         break;
@@ -198,6 +218,42 @@ function startWatcher(): void {
   });
 
   watcher.start();
+}
+
+/** 트레이에 며칠씩 상주할 수 있어 시작 시 한 번으로는 부족하다 — 요청 1건이라 부담은 없다 */
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+let updateStatus: AutoUpdateStatus = {
+  state: process.platform === 'win32' && app.isPackaged ? 'pending' : 'unsupported',
+};
+
+function setUpdateStatus(status: AutoUpdateStatus): void {
+  updateStatus = status;
+  mainWindow?.webContents.send('app:update-status', status);
+}
+
+/**
+ * GitHub Release 의 latest.yml 을 보고 새 버전을 백그라운드로 받아둔다.
+ * 설치는 앱이 종료될 때(autoInstallOnAppQuit) — 게임 중에 앱이 재시작되는 일은 없다.
+ */
+function startAutoUpdate(): void {
+  if (updateStatus.state === 'unsupported') return;
+
+  autoUpdater.on('update-downloaded', (info) => {
+    setUpdateStatus({ state: 'downloaded', version: info.version });
+  });
+  autoUpdater.on('error', (err) => {
+    console.error('[updater]', err);
+    // 이미 받아둔 업데이트는 그대로 종료 시 설치되므로 안내를 바꾸지 않는다
+    if (updateStatus.state !== 'downloaded') setUpdateStatus({ state: 'error' });
+  });
+
+  const check = () => {
+    if (updateStatus.state === 'downloaded') return;
+    autoUpdater.checkForUpdates().catch((err) => console.error('[updater]', err));
+  };
+  check();
+  setInterval(check, UPDATE_CHECK_INTERVAL_MS);
 }
 
 function exportFileName(): string {
@@ -267,18 +323,25 @@ function registerCountersIpc(): void {
   });
 }
 
-app.whenReady().then(() => {
-  if (!isDev) registerAppProtocol();
+// 락을 못 잡은 인스턴스는 종료 중이다 — 창·트레이·워처를 만들지 않는다
+if (hasInstanceLock) {
+  app.on('second-instance', showMainWindow);
 
-  ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
-  ipcMain.handle('app:get-version', (): string => readAppVersion());
-  registerCountersIpc();
+  app.whenReady().then(() => {
+    if (!isDev) registerAppProtocol();
 
-  app.dock?.setIcon(appIconPath);
-  createWindow();
-  createTray();
-  startWatcher();
-});
+    ipcMain.handle('lcu:get-snapshot', (): LcuSnapshot => snapshot);
+    ipcMain.handle('app:get-version', (): string => readAppVersion());
+    ipcMain.handle('app:get-update-status', (): AutoUpdateStatus => updateStatus);
+    registerCountersIpc();
+
+    app.dock?.setIcon(appIconPath);
+    createWindow();
+    createTray();
+    startWatcher();
+    startAutoUpdate();
+  });
+}
 
 // 창이 모두 닫혀도 트레이로 상주 — 종료하지 않음
 app.on('window-all-closed', () => {
@@ -289,6 +352,4 @@ app.on('before-quit', () => {
   watcher?.stop();
 });
 
-app.on('activate', () => {
-  mainWindow?.show();
-});
+app.on('activate', showMainWindow);

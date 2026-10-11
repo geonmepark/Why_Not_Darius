@@ -23,6 +23,18 @@ export type CountersIoResult =
   | { status: 'canceled' }
   | { status: 'error'; message: string };
 
+/**
+ * Windows 설치본만 자동 업데이트한다. macOS 는 서명·공증 없이는 업데이트를 적용할 수 없어
+ * 기존처럼 릴리스 페이지로 안내한다.
+ * - unsupported: dev 실행이거나 macOS — 수동 안내
+ * - pending: 확인·다운로드 중이거나 이미 최신
+ * - downloaded: 받아둠, 앱을 종료하면 설치된다
+ * - error: 자동 업데이트 실패 — 수동 안내로 되돌린다
+ */
+export type AutoUpdateStatus =
+  | { state: 'unsupported' | 'pending' | 'error' }
+  | { state: 'downloaded'; version: string };
+
 export type ElectronApi = {
   onLcuStatus: (cb: (event: LcuStatusEvent) => void) => () => void;
   onLcuChampSelect: (cb: (event: LcuChampSelectEvent) => void) => () => void;
@@ -39,4 +51,6 @@ export type ElectronApi = {
 
   /** 설치된 앱 버전 — 최신 릴리즈와 비교해 업데이트 배너를 띄우는 데 쓴다 */
   getAppVersion: () => Promise<string>;
+  getAutoUpdateStatus: () => Promise<AutoUpdateStatus>;
+  onAutoUpdateStatus: (cb: (status: AutoUpdateStatus) => void) => () => void;
 };
