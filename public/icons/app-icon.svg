@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 와낫다 앱 아이콘 — 금색 육각 픽 슬롯 안의 느낌표: 챔프 선택 중 카운터픽을 알려주는 앱 -->
+  <rect width="256" height="256" rx="56" fill="#1f2a45" />
+  <polygon points="128,34 209.4,81 209.4,175 128,222 46.6,175 46.6,81" fill="#2c3a5e" stroke="#e0b44a" stroke-width="12" stroke-linejoin="round" />
+  <rect x="114" y="72" width="28" height="80" rx="14" fill="#f4f1ea" />
+  <circle cx="128" cy="181" r="16" fill="#e5484d" />
+</svg>
