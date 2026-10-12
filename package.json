@@ -1,6 +1,6 @@
 {
   "name": "why-not-dari",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.whynotdari.app",
-    "productName": "와낫다",
+    "productName": "Wanatda",
     "files": [
       "dist-electron/**/*",
       "out/**/*",
@@ -37,7 +37,7 @@
       "target": "nsis"
     },
     "nsis": {
-      "artifactName": "Why-Not-Dari-Setup-${version}.${ext}"
+      "artifactName": "Wanatda-Setup-${version}.${ext}"
     },
     "mac": {
       "target": "dmg"
