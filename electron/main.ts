@@ -22,7 +22,7 @@ import type { LcuChampSelectEvent, LcuSnapshot, LcuStatusEvent } from './lcu/typ
 /**
  * 앱 이름을 명시하지 않으면 dev 는 Electron 기본값을, 설치본은 빌드 설정값을 쓴다.
  * 두 경로가 갈리면 저장 데이터가 따라오지 못하므로 여기서 못 박는다.
- * userData 경로에 들어가는 값이라 공백 없는 형태를 쓴다 (표시 이름은 와낫다). 이름을 바꿔도 이 값은 그대로 둔다 — 바꾸면 저장 데이터를 못 찾는다.
+ * userData 경로에 들어가는 값이라 공백 없는 형태를 쓴다 (표시 이름은 Wanatda). 이름을 바꿔도 이 값은 그대로 둔다 — 바꾸면 저장 데이터를 못 찾는다.
  */
 app.setName('why-not-dari');
 
@@ -148,7 +148,7 @@ function createTray(): void {
     icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 }),
   );
 
-  tray.setToolTip('와낫다');
+  tray.setToolTip('Wanatda');
 
   const menu = Menu.buildFromTemplate([
     {
