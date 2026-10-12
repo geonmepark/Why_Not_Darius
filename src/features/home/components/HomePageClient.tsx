@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLcuStore } from '@/store/lcu';
+import { useAppVersion, useUpdatedNotice } from '@/hooks/useAppVersion';
+import { AppVersion } from '@/components/common/AppVersion';
 import { LcuStatusBadge } from './LcuStatusBadge';
 import { CounterAlert } from './CounterAlert';
 import { UpdateBanner } from './UpdateBanner';
@@ -11,6 +13,8 @@ import { UpdateBanner } from './UpdateBanner';
 export function HomePageClient() {
   const status = useLcuStore((s) => s.status);
   const phase = useLcuStore((s) => s.phase);
+  const version = useAppVersion();
+  useUpdatedNotice(version);
 
   const isPickPhase = ['PLANNING', 'BAN_PICK', 'FINALIZATION'].includes(phase);
 
@@ -44,6 +48,8 @@ export function HomePageClient() {
           <CounterAlert />
         )}
       </main>
+
+      <AppVersion className="px-5" />
     </div>
   );
 }

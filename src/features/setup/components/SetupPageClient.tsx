@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,10 @@ import { FilterBar } from './FilterBar';
 import { ChampionGrid } from './ChampionGrid';
 import { CounterPickerDialog } from './CounterPickerDialog';
 import { CounterIoButtons } from './CounterIoButtons';
+import { AppVersion } from '@/components/common/AppVersion';
+
+// 서버 렌더에선 false, 클라이언트에선 true — 구독할 외부 상태는 없다
+const noopSubscribe = () => () => {};
 
 export function SetupPageClient() {
   const { data: champions, isLoading, isError } = useChampions();
@@ -18,8 +22,11 @@ export function SetupPageClient() {
   const { counters, setCounters } = useCounterStore();
 
   // SSR hydration 가드
-  const [hasHydrated, setHasHydrated] = useState(false);
-  useEffect(() => setHasHydrated(true), []);
+  const hasHydrated = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
 
   const [selectedPosition, setSelectedPosition] = useState<Position | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +116,8 @@ export function SetupPageClient() {
         onSelectChampion={setSelectedOpponentId}
         isLoading={isLoading}
       />
+
+      <AppVersion />
 
       <CounterPickerDialog
         open={!!selectedOpponentId}
